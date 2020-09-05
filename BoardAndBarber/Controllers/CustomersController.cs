@@ -13,15 +13,52 @@ namespace BoardAndBarber.Controllers
     [ApiController]
     public class CustomersController : ControllerBase
     {
+        CustomerRepository _repo;
+
+        public CustomersController()
+        {
+            _repo = new CustomerRepository();
+        }
+
         [HttpPost]
         public IActionResult CreateCustomer(Customer customer)
         {
-            var repo = new CustomerRepository();
-            repo.Add(customer);
+            _repo.Add(customer);
 
             return Created($"/api/customers/{customer.Id}", customer);
         }
 
+        [HttpGet]
+        public IActionResult GetAllCustomers()
+        {
+            var allCustomers = _repo.GetAll();
 
+            return Ok(allCustomers);
+        }
+
+        //api/customers/{id}
+        //api/customers/2
+        [HttpPut("{id}")]
+        public IActionResult UpdateCustomer(int id, Customer customer)
+        {
+            var updatedCustomer = _repo.Update(id, customer);
+
+            return Ok(updatedCustomer);
+        }
+        
+        //api/customers/{id}
+        //api/customers/2
+        [HttpDelete("{id}")]
+        public IActionResult DeleteCustomer(int id)
+        {
+            if (_repo.GetById(id) == null)
+            {
+                return NotFound();
+            }
+
+            _repo.Remove(id);
+
+            return Ok();
+        }
     }
 }
