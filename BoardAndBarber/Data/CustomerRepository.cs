@@ -36,20 +36,10 @@ namespace BoardAndBarber.Data
             cmd.Parameters.AddWithValue("favoritebarber", customerToAdd.FavoriteBarber);
             cmd.Parameters.AddWithValue("notes", customerToAdd.Notes);
 
+            //run this query, and only return the top row's leftmost column
             var newId = (int) cmd.ExecuteScalar();
 
             customerToAdd.Id = newId;
-
-            //var newId = 1;
-            //if (_customers.Count > 0)
-            //{
-            //    //get the next id by finding the max current id
-            //    newId = _customers.Select(p => p.Id).Max() + 1;
-            //}
-
-            //
-
-            //_customers.Add(customerToAdd);
         }
 
         public List<Customer> GetAll()
@@ -89,13 +79,7 @@ namespace BoardAndBarber.Data
                           where id = {id}";
 
             command.CommandText = query;
-
-            //run this query, and i don't care about the results
-            //command.ExecuteNonQuery()
-
-            //run this query, and only return the top row's leftmost column
-            //command.ExecuteScalar()
-
+            
             //run this query and give me the results, one row at a time
             var reader = command.ExecuteReader();
             //sql server has executed the command and is waiting to give us results
@@ -108,27 +92,61 @@ namespace BoardAndBarber.Data
             {
                 return null;
             }
-
-            //return _customers.FirstOrDefault(c => c.Id == id);
         }
 
         public Customer Update(int id, Customer customer)
         {
-            var customerToUpdate = GetById(id);
+            var sql = @"UPDATE [dbo].[Customers]
+                          SET [Name] = @name
+                             ,[Birthday] = @birthday
+                             ,[FavoriteBarber] = @favoriteBarber
+                             ,[Notes] = @notes
+                        output inserted.*
+                        WHERE id = @id";
 
-            customerToUpdate.Birthday = customer.Birthday;
-            customerToUpdate.FavoriteBarber = customer.FavoriteBarber;
-            customerToUpdate.Name = customer.Name;
-            customerToUpdate.Notes = customer.Notes;
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
 
-            return customerToUpdate;
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = sql;
+
+            cmd.Parameters.AddWithValue("name", customer.Name);
+            cmd.Parameters.AddWithValue("birthday", customer.Birthday);
+            cmd.Parameters.AddWithValue("favoriteBarber", customer.FavoriteBarber);
+            cmd.Parameters.AddWithValue("notes", customer.Notes);
+            cmd.Parameters.AddWithValue("id", id);
+
+            var reader = cmd.ExecuteReader();
+
+            if (reader.Read())
+            {
+                return MapToCustomer(reader);
+            }
+
+            return null;
         }
 
-        public void Remove(int id)
+        public void Remove(int customerId)
         {
-            var customerToDelete = GetById(id);
+            var sql = @"DELETE 
+                        FROM [dbo].[Customers]
+                        WHERE Id = @id";
 
-            _customers.Remove(customerToDelete);
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = sql;
+
+            cmd.Parameters.AddWithValue("id", customerId);
+
+            //run this query, and i don't care about the results
+            var rows = cmd.ExecuteNonQuery();
+
+            if (rows != 1)
+            {
+                //do something because that is bad
+            }
         }
 
         Customer MapToCustomer(SqlDataReader reader)
