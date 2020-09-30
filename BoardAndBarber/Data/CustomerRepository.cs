@@ -16,16 +16,40 @@ namespace BoardAndBarber.Data
 
         public void Add(Customer customerToAdd)
         {
-            var newId = 1;
-            if (_customers.Count > 0)
-            {
-                //get the next id by finding the max current id
-                newId = _customers.Select(p => p.Id).Max() + 1;
-            }
+            var sql = @"INSERT INTO [dbo].[Customers]
+                               ([Name]
+                               ,[Birthday]
+                               ,[FavoriteBarber]
+                               ,[Notes])
+                        Output inserted.notes
+                        VALUES
+                               (@name,@birthday,@favoritebarber,@notes)";
+
+            using var connection = new SqlConnection(_connectionString);
+            connection.Open();
+
+            var cmd = connection.CreateCommand();
+            cmd.CommandText = sql;
+
+            cmd.Parameters.AddWithValue("name", customerToAdd.Name);
+            cmd.Parameters.AddWithValue("birthday", customerToAdd.Birthday);
+            cmd.Parameters.AddWithValue("favoritebarber", customerToAdd.FavoriteBarber);
+            cmd.Parameters.AddWithValue("notes", customerToAdd.Notes);
+
+            var newId = (int) cmd.ExecuteScalar();
 
             customerToAdd.Id = newId;
 
-            _customers.Add(customerToAdd);
+            //var newId = 1;
+            //if (_customers.Count > 0)
+            //{
+            //    //get the next id by finding the max current id
+            //    newId = _customers.Select(p => p.Id).Max() + 1;
+            //}
+
+            //
+
+            //_customers.Add(customerToAdd);
         }
 
         public List<Customer> GetAll()
