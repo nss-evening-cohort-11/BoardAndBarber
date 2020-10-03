@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using BoardAndBarber.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.SqlClient;
+using Dapper;
 
 namespace BoardAndBarber.Data
 {
@@ -21,77 +22,39 @@ namespace BoardAndBarber.Data
                                ,[Birthday]
                                ,[FavoriteBarber]
                                ,[Notes])
-                        Output inserted.notes
+                        Output inserted.id
                         VALUES
                                (@name,@birthday,@favoritebarber,@notes)";
 
-            using var connection = new SqlConnection(_connectionString);
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = sql;
-
-            cmd.Parameters.AddWithValue("name", customerToAdd.Name);
-            cmd.Parameters.AddWithValue("birthday", customerToAdd.Birthday);
-            cmd.Parameters.AddWithValue("favoritebarber", customerToAdd.FavoriteBarber);
-            cmd.Parameters.AddWithValue("notes", customerToAdd.Notes);
-
-            //run this query, and only return the top row's leftmost column
-            var newId = (int) cmd.ExecuteScalar();
-
+            var newId = db.ExecuteScalar<int>(sql, customerToAdd);
+            
             customerToAdd.Id = newId;
         }
 
         public List<Customer> GetAll()
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
+            var customers = db.Query<Customer>("select * from customers");
 
-            var command = connection.CreateCommand();
-            var sql = "select * from customers";
-
-            command.CommandText = sql;
-
-            var reader = command.ExecuteReader();
-            var customers = new List<Customer>();
-            
-            while (reader.Read())
-            {
-                var customer = MapToCustomer(reader);
-                customers.Add(customer);
-            }
-
-            return customers;
-
-            //return _customers;
+            return customers.ToList();
         }
 
-        public Customer GetById(int id)
+        public Customer GetById(int customerId)
         {
-            using var connection = new SqlConnection(_connectionString);
+            using var db = new SqlConnection(_connectionString);
 
-            connection.Open();
-
-            var command = connection.CreateCommand();
-            var query = $@"select *
+            var query = @"select *
                           from Customers
-                          where id = {id}";
+                          where id = @cid";
 
-            command.CommandText = query;
-            
-            //run this query and give me the results, one row at a time
-            var reader = command.ExecuteReader();
-            //sql server has executed the command and is waiting to give us results
-            
-            if (reader.Read())
-            {
-                return MapToCustomer(reader);
-            }
-            else
-            {
-                return null;
-            }
+            var parameters = new { cid = customerId };
+
+            var customer = db.QueryFirstOrDefault<Customer>(query, parameters);
+
+            return customer;
         }
 
         public Customer Update(int id, Customer customer)
@@ -104,26 +67,22 @@ namespace BoardAndBarber.Data
                         output inserted.*
                         WHERE id = @id";
 
-            using var connection = new SqlConnection(_connectionString);
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = sql;
-
-            cmd.Parameters.AddWithValue("name", customer.Name);
-            cmd.Parameters.AddWithValue("birthday", customer.Birthday);
-            cmd.Parameters.AddWithValue("favoriteBarber", customer.FavoriteBarber);
-            cmd.Parameters.AddWithValue("notes", customer.Notes);
-            cmd.Parameters.AddWithValue("id", id);
-
-            var reader = cmd.ExecuteReader();
-
-            if (reader.Read())
+            // if property names should match the name of the property or variable on the right, you don't have to specify.  
+            // you can leave off the property name if the name on the right and the property name match.
+            var parameters = new
             {
-                return MapToCustomer(reader);
-            }
+                Name = customer.Name,
+                Birthday = customer.Birthday,
+                FavoriteBarber = customer.FavoriteBarber,
+                Notes = customer.Notes,
+                id = id
+            };
 
-            return null;
+            var updatedCustomer = db.QueryFirstOrDefault<Customer>(sql, parameters);
+
+            return updatedCustomer;
         }
 
         public void Remove(int customerId)
@@ -132,37 +91,9 @@ namespace BoardAndBarber.Data
                         FROM [dbo].[Customers]
                         WHERE Id = @id";
 
-            using var connection = new SqlConnection(_connectionString);
-            connection.Open();
+            using var db = new SqlConnection(_connectionString);
 
-            var cmd = connection.CreateCommand();
-            cmd.CommandText = sql;
-
-            cmd.Parameters.AddWithValue("id", customerId);
-
-            //run this query, and i don't care about the results
-            var rows = cmd.ExecuteNonQuery();
-
-            if (rows != 1)
-            {
-                //do something because that is bad
-            }
+            db.Execute(sql, new {id = customerId});
         }
-
-        Customer MapToCustomer(SqlDataReader reader)
-        {
-            var customerFromDb = new Customer();
-
-            //do something with the  result
-            customerFromDb.Id = (int)reader["Id"]; //explicit conversion/cast, throws exception on failure
-            customerFromDb.Name = reader["Name"] as string; // implicit cast/conversion, returns a null on failure 
-            customerFromDb.Birthday = DateTime.Parse(reader["Birthday"].ToString()); //parsing
-            customerFromDb.FavoriteBarber = reader["FavoriteBarber"].ToString(); //make it a string
-            customerFromDb.Notes = reader["Notes"].ToString();
-
-            return customerFromDb;
-        }
-
-
     }
 }
