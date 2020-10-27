@@ -14,10 +14,10 @@ class Customers extends React.Component {
 
     render() {
         const {customers} = this.state;
-        const buildCustomerList = customers.map((customer) =>{
+        const buildCustomerList = customers.map((customer) => {
             return (<SingleCustomer key={customer.id} customer={customer}/>)
         });
-         
+        
         return (
             <>
             {buildCustomerList}
