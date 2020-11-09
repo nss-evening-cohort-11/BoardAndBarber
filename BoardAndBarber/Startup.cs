@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using BoardAndBarber.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
@@ -27,6 +28,13 @@ namespace BoardAndBarber
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            services.AddSingleton<IConfiguration>(Configuration);
+            services.AddTransient<CustomerRepository>();
+
+            //services.AddTransient<>()
+            //services.AddSingleton<>()
+            //services.AddScoped<>()
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

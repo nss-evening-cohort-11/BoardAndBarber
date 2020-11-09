@@ -6,14 +6,18 @@ using BoardAndBarber.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Data.SqlClient;
 using Dapper;
+using Microsoft.Extensions.Configuration;
 
 namespace BoardAndBarber.Data
 {
     public class CustomerRepository
     {
-        static List<Customer> _customers = new List<Customer>();
+        readonly string _connectionString;
 
-        const string _connectionString = "Server=localhost;Database=BoardAndBarber;Trusted_Connection=True;";
+        public CustomerRepository(IConfiguration configuration)
+        {
+            _connectionString = configuration.GetConnectionString("BoardAndBarber");
+        }
 
         public void Add(Customer customerToAdd)
         {
@@ -37,9 +41,17 @@ namespace BoardAndBarber.Data
         {
             using var db = new SqlConnection(_connectionString);
 
-            var customers = db.Query<Customer>("select * from customers");
+            try
+            {
+                var customers = db.Query<Customer>("select * from customer");
 
-            return customers.ToList();
+                return customers.ToList();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public Customer GetById(int customerId)

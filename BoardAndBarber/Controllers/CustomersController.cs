@@ -15,9 +15,9 @@ namespace BoardAndBarber.Controllers
     {
         CustomerRepository _repo;
 
-        public CustomersController()
+        public CustomersController(CustomerRepository repo)
         {
-            _repo = new CustomerRepository();
+            _repo = repo;
         }
 
         [HttpPost]
