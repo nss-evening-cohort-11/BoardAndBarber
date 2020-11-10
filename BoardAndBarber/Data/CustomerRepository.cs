@@ -43,7 +43,7 @@ namespace BoardAndBarber.Data
 
             try
             {
-                var customers = db.Query<Customer>("select * from customer");
+                var customers = db.Query<Customer>("select * from customers");
 
                 return customers.ToList();
             }

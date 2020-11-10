@@ -1,10 +1,20 @@
 import './App.scss';
-import Customers from '../components/pages/Customers/Customers'
+import fbConnection from "../helpers/data/connection";
+import Customers from '../components/pages/Customers/Customers';
+import Login from '../components/pages/Login/Login';
+import {BrowserRouter, Route, Redirect, Switch} from 'react-router-dom';
+
+fbConnection();
 
 function App() {
   return (
     <div className="App">
-      <Customers/>
+      <BrowserRouter>
+        <Switch>
+          <Route path="/Login" component={Login}></Route>
+          <Route path="/Customers" component={Customers}></Route>
+        </Switch>
+      </BrowserRouter>
     </div>
   );
 }
